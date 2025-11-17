@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test GAS API</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        form { display: flex; flex-direction: column; gap: 10px; }
+        input, button { padding: 8px; font-size: 16px; }
+        #result { margin-top: 20px; }
+        #generatedImage { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <h1>Test Google Apps Script API</h1>
+    <p>Enter your API key and photo description to test the image generation.</p>
+    
+    <form id="testForm">
+        <label for="apiKey">API Key:</label>
+        <input type="text" id="apiKey" required>
+        
+        <label for="description">Photo Description:</label>
+        <input type="text" id="description" required placeholder="e.g., A cute cat in space">
+        
+        <label for="width">Width (optional, default 512):</label>
+        <input type="number" id="width" value="512">
+        
+        <label for="height">Height (optional, default 512):</label>
+        <input type="number" id="height" value="512">
+        
+        <button type="submit">Generate Image</button>
+    </form>
+    
+    <div id="result"></div>
+    <img id="generatedImage" src="" alt="Generated Image" style="display: none;">
+    
+    <script>
+        const form = document.getElementById('testForm');
+        const resultDiv = document.getElementById('result');
+        const image = document.getElementById('generatedImage');
+        
+        // Replace this with your actual deployed Google Apps Script web app URL
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwuo3v9wRZFLD_NqAgYfYdPYFzZQPBv6yvLRRjXXa78KTJQ9C7OB4kQz_SnbGBBNCZJjQ/exec'; // <-- Paste your web app URL here
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const description = document.getElementById('description').value.trim();
+            const width = parseInt(document.getElementById('width').value) || 512;
+            const height = parseInt(document.getElementById('height').value) || 512;
+            
+            if (!apiKey || !description) {
+                resultDiv.innerHTML = '<p style="color: red;">Please enter API Key and Description.</p>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<p>Loading...</p>';
+            image.style.display = 'none';
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        api_key: apiKey,
+                        photo_description: description,
+                        width: width,
+                        height: height
+                    }),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    resultDiv.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+                } else {
+                    resultDiv.innerHTML = `
+                        <p>Success! Remaining limit: ${data.remaining_limit}</p>
+                        <p>Image URL: <a href="${data.image_url}" target="_blank">${data.image_url}</a></p>
+                    `;
+                    image.src = data.image_url;
+                    image.style.display = 'block';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color: red;">Request failed: ${error.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
